@@ -1,0 +1,74 @@
+# ============================================================================
+# Sentinel Ops - artefak yang tidak boleh masuk repositori
+# ============================================================================
+
+# --- Dependensi -------------------------------------------------------------
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# --- Build & cache Next.js --------------------------------------------------
+/.next/
+/out/
+/build
+/dist
+next-env.d.ts
+*.tsbuildinfo
+.turbo
+
+# --- Basis data lokal (PGlite) & berkas sementara ---------------------------
+# Direktori ini berisi data operasional sungguhan: jangan pernah di-commit.
+/.data/
+/pglite-data/
+.pglite/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+/drizzle/*.tmp
+
+# --- Variabel lingkungan rahasia --------------------------------------------
+# .env.example WAJIB ikut ke Git sebagai dokumentasi konfigurasi.
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+!.env.example
+*.pem
+*.key
+
+# --- Log --------------------------------------------------------------------
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# --- Artefak agent / tangkapan layar ----------------------------------------
+/screenshots/
+.openchamber/
+
+# --- Sistem operasi & editor ------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# --- Deployment & uji --------------------------------------------------------
+.vercel
+coverage/
+
+# --- Skrip sementara ---------------------------------------------------------
+scripts/tmp-*
+tmp-*

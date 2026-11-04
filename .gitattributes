@@ -1,0 +1,38 @@
+# Normalize line endings so the repository is identical on every OS.
+#
+# Without this, Git on Windows rewrites working-copy files to CRLF while the
+# index keeps LF, which produces a wall of "LF will be replaced by CRLF" warnings
+# on every add and noisy diffs when a file is touched by another platform.
+* text=auto eol=lf
+
+# Explicit types, in case a platform auto-detection disagrees.
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.js   text eol=lf
+*.mjs  text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.sql  text eol=lf
+*.css  text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+
+# Windows batch/PowerShell scripts need CRLF to run.
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binary: never touch, never diff as text.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.woff binary
+*.woff2 binary
+
+# Local database files must never be normalized or merged.
+*.db       binary
+*.sqlite   binary
+*.sqlite3  binary

@@ -1,0 +1,199 @@
+@import 'tailwindcss';
+
+/*
+ * Sentinel Ops design tokens.
+ * Single source of truth: DESIGN.md. Every value below is a token; nothing in
+ * the codebase may hardcode a color, radius, or font size.
+ */
+
+@theme {
+  /* ---- Fonts ---- */
+  --font-sans: 'Geist', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', ui-monospace, 'SFMono-Regular',
+    Menlo, Consolas, monospace;
+
+  /* ---- Surfaces (dark instrument panel) ---- */
+  --color-surface-base: #0b0f14;
+  --color-surface-raised: #111820;
+  --color-surface-sunken: #080b0f;
+  --color-surface-overlay: #161f29;
+
+  /* ---- Borders ---- */
+  --color-border-subtle: #1e2a36;
+  --color-border-strong: #2e3f4f;
+
+  /* ---- Text ---- */
+  --color-text-primary: #e8eef4;
+  --color-text-secondary: #9aabb9;
+  --color-text-muted: #6b7c8d;
+  --color-text-inverse: #0b0f14;
+
+  /* ---- Semantic status ---- */
+  --color-status-healthy: #3fb950;
+  --color-status-warning: #d29922;
+  --color-status-critical: #f85149;
+  --color-status-info: #4b9cd3;
+  --color-status-neutral: #5a6b7c;
+
+  /* ---- Brand / action ---- */
+  --color-accent: #3fb950;
+  --color-accent-hover: #4fcb5e;
+  --color-accent-subtle: #12241a;
+  --color-danger: #f85149;
+  --color-danger-subtle: #2a1517;
+
+  /* ---- Chart series ---- */
+  --color-chart-1: #3fb950;
+  --color-chart-2: #4b9cd3;
+  --color-chart-3: #d29922;
+  --color-chart-4: #f85149;
+  --color-chart-5: #8b7bd8;
+  --color-chart-6: #5a6b7c;
+
+  /* ---- Radii ---- */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 999px;
+
+  /* ---- Spacing (extends the default Tailwind scale) ---- */
+  --spacing-card: 16px;
+  --spacing-card-lg: 20px;
+  --spacing-section: 32px;
+
+  /* ---- Motion ---- */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Base                                                                       */
+/* -------------------------------------------------------------------------- */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-border-subtle);
+  }
+
+  html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-surface-base);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Tabular figures are mandatory for every number in this product. */
+  :where(td, th, [data-numeric], .font-mono) {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: var(--color-text-primary);
+  }
+
+  /* Focus: always visible, never removed. */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+    color: var(--color-text-primary);
+  }
+
+  /* Scrollbars that belong to the surface, not the OS default. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-border-strong) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-strong);
+    border-radius: var(--radius-full);
+    border: 2px solid var(--color-surface-base);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Utilities                                                                  */
+/* -------------------------------------------------------------------------- */
+
+@utility text-balance-pretty {
+  text-wrap: pretty;
+}
+
+/* Numbers that must align in tables and metric cards. */
+@utility numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Uppercase micro-label used above metrics and in table headers. */
+@utility label-xs {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Motion                                                                     */
+/* -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Print (A4 reports live in the (print) route group)                         */
+/* -------------------------------------------------------------------------- */
+
+@media print {
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+}
