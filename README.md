@@ -7,6 +7,65 @@ insiden ber-SLA.
 Spesifikasi lengkap ada di `spesifikasi_sistem_itsm_web_security_monitor.md`.
 Keputusan visual ada di `DESIGN.md`.
 
+## Tampilan
+
+<p align="center">
+  <img src="docs/screenshots/dashboard-desktop.jpg" alt="Dasbor Komando" width="1100">
+</p>
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/assets-desktop.jpg" alt="Inventaris aset">
+      <br>Inventaris aset — grid data dengan status kesehatan
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/incidents-desktop.jpg" alt="Antrean tiket insiden">
+      <br>Antrean insiden — hitung mundur SLA per baris
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/command-palette.jpg" alt="Palet perintah">
+      <br>Palet perintah (Ctrl/⌘ + K)
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/inspector-drawer.jpg" alt="Inspector aset">
+      <br>Inspector aset — drawer tanpa meninggalkan list
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/report-print.jpg" alt="Laporan cetak A4">
+      <br>Laporan postmortem cetak (A4)
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/status-public.jpg" alt="Halaman status publik">
+      <br>Halaman status publik <code>/status/[slug]</code>, tanpa sesi
+    </td>
+  </tr>
+</table>
+
+Tampilan di atas memakai anatomi 5-zona: topbar + sidebar, header konteks,
+toolbar, grid data, dan rail telemetri. Di ponsel yang sama terlihat utuh:
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/dashboard-mobile.jpg" alt="Dasbor mobile">
+      <br>Dasbor
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/assets-mobile.jpg" alt="Aset mobile">
+      <br>Detail aset
+    </td>
+    <td align="center" width="33%">
+      <img src="docs/screenshots/vault-mobile.jpg" alt="Brankas mobile">
+      <br>Brankas kredensial
+    </td>
+  </tr>
+</table>
+
 ## Menjalankan
 
 ```bash
