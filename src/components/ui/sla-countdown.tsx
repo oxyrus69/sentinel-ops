@@ -60,8 +60,16 @@ export function SlaCountdown({
   const [label, setLabel] = useState(initialLabel);
   const [state, setState] = useState<SlaState>(initialState);
 
+  /**
+   * Resolved and closed tickets freeze: the server-computed state and label are
+   * final. Without this the ticking effect below turns a "Lewat tenggat" badge
+   * on a closed ticket into a growing "lewat 4h" as wall time passes — that
+   * ticket's own clock stopped at resolution.
+   */
+  const frozen = initialLabel === 'Tepat waktu' || initialLabel === 'Lewat tenggat';
+
   useEffect(() => {
-    if (!dueAt) return;
+    if (!dueAt || frozen) return;
 
     const due = new Date(dueAt).getTime();
     const created = new Date(createdAt).getTime();
@@ -88,7 +96,7 @@ export function SlaCountdown({
       clearTimeout(first);
       clearInterval(interval);
     };
-  }, [dueAt, createdAt]);
+  }, [dueAt, createdAt, frozen]);
 
   if (!dueAt || state === 'NOT_APPLICABLE') {
     return <span className={cn('text-[12px] text-text-muted', className)}>Tanpa tenggat</span>;
@@ -105,6 +113,8 @@ export function SlaCountdown({
     >
       {state === 'MET' ? (
         <span>tepat waktu</span>
+      ) : frozen ? (
+        <span>{initialLabel}</span>
       ) : (
         <>
           <span aria-hidden="true" className="text-[10px] opacity-70">

@@ -43,10 +43,6 @@ export default async function RunbookDetailPage({
   return (
     <>
       <PageHeader
-        breadcrumb={[
-          { label: 'Runbook & SOP', href: '/runbooks' },
-          { label: rb.title },
-        ]}
         title={rb.title}
         description={rb.summary ?? undefined}
         actions={<Badge tone="neutral">{CATEGORY_LABEL[rb.category] ?? rb.category}</Badge>}

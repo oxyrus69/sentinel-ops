@@ -58,7 +58,17 @@ export async function listRunbooks(filter: {
     .orderBy(runbooks.title);
 }
 
+/** True for a well-formed UUID — guards a dynamic segment before it hits a uuid column. */
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 export async function getRunbookById(id: string) {
+  // A non-UUID segment (a mistyped link, a crawler) must not reach a uuid
+  // column: Postgres raises a cast error and the page 500s instead of 404ing.
+  if (!isUuid(id)) return null;
   const row = await db
     .select({ runbook: runbooks })
     .from(runbooks)

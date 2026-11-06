@@ -166,28 +166,56 @@ No glassmorphism. No blurred translucent cards. No glowing borders.
 
 ## 7. Layout
 
+**Anatomi wajib: 5-Zone Enterprise App Shell** (mengikat, lihat
+`GLOBAL-DASHBOARD-DESIGN.md`). Setiap rute terautentikasi dirender di dalamnya.
+
 | Token | Value |
 |---|---|
-| Sidebar width | `248px` (collapsed `64px`) |
-| Topbar height | `56px` |
-| Content max-width | `1440px` |
-| Content padding | `24px` desktop, `16px` mobile |
+| Sidebar width | `240px` expanded, `64px` icon rail |
+| Top utility bar height | `48px` (sticky, Zona B) |
+| Contextual sub-header | `PageHeader`, ~48px (Zona C) |
+| Content max-width | `1600px` |
+| Content padding | `24px` desktop, `12px` mobile |
+| Inspector drawer width | `480px` (Zona E, slide-over) |
+
+### Zona
+
+| Zona | Isi | Komponen |
+|---|---|---|
+| **A** | Navigation rail, grouped by domain, live counters, workspace + DB footer | `AppSidebar` |
+| **B** | Breadcrumb, Ctrl+K trigger, notification bell, telemetry pill, print | `TopBar` |
+| **C** | Page title, count badge, description, view switcher, primary action | `PageHeader` |
+| **D** | KPI strip + split workspace (8/4 on `xl`) + telemetry rail | `KpiStatCard`, `EnterpriseDataGrid`, `TelemetryRail` |
+| **E** | Contextual slide-over inspector | `InspectorDrawer` |
+
+### Komponen standar (wajib ada)
+
+| Komponen | Berkas | Kontrak |
+|---|---|---|
+| `KpiStatCard` | `components/ui/kpi-stat-card.tsx` | 4 lapis: label, nilai mono, delta/sparkline, footer ambang |
+| `EnterpriseDataGrid` | `components/ui/enterprise-data-grid.tsx` | toolbar cari + facet berhitung + density + bulk bar + footer paginasi |
+| `CommandPalette` | `components/ui/command-palette.tsx` | `Ctrl+K`, alias ID/EN, navigasi `↑↓`/`Enter`/`Esc` |
+| `InspectorDrawer` | `components/ui/inspector-drawer.tsx` | slide-over `480px`, tab Ringkasan/Tindakan |
+| `ChartCardWithDataMatrix` | `admin/scan-activity-chart.tsx`, `admin/incident-trend-chart.tsx` | grafik + tabel angka pendamping wajib di DOM |
+| `TelemetryRail` | `components/ui/telemetry-rail.tsx` | kartu DSS, segmented health bar, live audit timeline |
 
 ### Responsive behavior
 
-- **Desktop (≥1024px):** sidebar + content. Tables render as real tables.
-- **Tablet (768–1023px):** sidebar collapses to icons, content full width.
-- **Mobile (<768px):** sidebar becomes a drawer. Every `DataTable` switches to
-  stacked cards. No horizontal scrolling anywhere.
+- **Desktop (≥1280px):** sidebar 240px, KPI 4 kolom, workspace 8/4.
+- **Desktop kecil (1024–1279px):** sidebar 240px, KPI 2 kolom, workspace satu kolom.
+- **Tablet (768–1023px):** sidebar jadi ikon 64px; grid tetap tabel.
+- **Mobile (<768px):** sidebar jadi drawer; DataGrid beralih ke kartu bertumpuk;
+  KPI satu kolom. Tidak ada scroll horizontal pada body.
 
 ---
 
 ## 8. Component Patterns
 
-### KPI card
-`--surface-raised`, `--radius-md`, 1px `--border-subtle`. Label (uppercase
-11px) above, metric in mono 32px below, optional delta/context line in
-`--text-secondary`. No icon tile. No accent border.
+### KPI card (`KpiStatCard`)
+`--surface-raised`, `--radius-md`, 1px `--border-subtle`. Empat lapis wajib:
+label uppercase 11px, nilai mono 27px tabular, baris ketiga delta-badge atau
+sparkline SVG `64×24`, footer ambang dengan mini progress bar. Tidak ada tile ikon,
+tidak ada border aksen berdiri sendiri.
 
 ### Status badge
 `--radius-full`, solid semantic fill, 12px medium text. Icon optional and
@@ -198,11 +226,15 @@ Mono numerals. Color follows `--status-*` by SLA state. When BREACHED the
 badge is solid critical and the row gains a left status bar (4px, semantic
 color). Static when not counting.
 
-### DataTable
-- Desktop: `<table>` with sticky header on `--surface-sunken`.
-- Row hover: `--surface-raised` → slightly lighter, 120ms, no layout shift.
-- Sortable columns show a lucide arrow; active column is `--text-primary`.
-- Mobile: same data as cards, generated from the same row object.
+### DataTable (`EnterpriseDataGrid`)
+- Toolbar inset (`--surface-sunken/70`): pencarian cepat, facet chips dengan
+  jumlah baris per kategori, toggle kerapatan Compact/Standar.
+- Header `11px uppercase tracking-wider` di atas `--surface-sunken/90`;
+  kolom aktif `--text-primary` dengan ikon arah.
+- Nominal, hitungan, waktu: rata kanan, `numeric` (mono + tabular).
+- Baris terpilih memunculkan floating bulk-action bar (L3 overlay).
+- Footer: rentang baris, pemilih ukuran halaman 10/20/50, tombol halaman.
+- Mobile: kartu bertumpuk dari objek baris yang sama.
 
 ### Form field
 Label 13px medium, input `--surface-sunken` + 1px `--border-subtle`,

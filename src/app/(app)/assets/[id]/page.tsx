@@ -86,10 +86,6 @@ export default async function AssetDetailPage({
   return (
     <>
       <PageHeader
-        breadcrumb={[
-          { label: 'Inventaris Aset', href: '/assets' },
-          { label: asset.name },
-        ]}
         title={asset.name}
         description={[
           asset.domainUrl.replace(/^https?:\/\//, ''),

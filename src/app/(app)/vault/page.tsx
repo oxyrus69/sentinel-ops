@@ -53,28 +53,37 @@ export default async function VaultPage({
     <>
       <PageHeader
         title="Brankas Kredensial"
+        count={{ value: entries.length, label: 'kredensial' }}
         description="Sandi disimpan terenkripsi AES-256-GCM. Membuka atau menyalin sandi tercatat di jejak audit beserta nama pengguna dan waktu akses."
       />
 
-      <div className="mb-4 grid grid-cols-3 gap-3">
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Stat label="Total kredensial" value={entries.length} />
         <Stat
-          label={`Belum dirotasi > ${ROTATION_DAYS}h`}
+          label={
+            <>
+              <span className="sm:hidden">Belum dirotasi</span>
+              <span className="hidden sm:inline">Belum dirotasi &gt; {ROTATION_DAYS} hari</span>
+            </>
+          }
           value={staleCount}
           tone={staleCount > 0 ? 'warning' : 'healthy'}
+          detail="di luar siklus rotasi"
         />
         <Stat
           label="Aset sedang insiden"
           value={compromisedCount}
           tone={compromisedCount > 0 ? 'critical' : 'healthy'}
+          detail="kredensial terpapar"
         />
       </div>
 
-      <form method="get" className="mb-4 flex flex-wrap items-center gap-2">
+      <form method="get" className="mb-3 flex flex-wrap items-center gap-2">
         <select
           name="category"
           defaultValue={category ?? ''}
-          className="h-8 rounded-sm border border-border-subtle bg-surface-sunken px-2 text-[12.5px] text-text-primary focus:border-accent focus:outline-none"
+          aria-label="Filter kategori kredensial"
+          className="h-8 cursor-pointer rounded-sm border border-border-subtle bg-surface-sunken px-2 text-[12px] text-text-primary focus:border-accent focus:outline-none"
         >
           <option value="">Semua kategori</option>
           {Object.entries(CATEGORY_LABEL).map(([value, label]) => (
@@ -88,19 +97,20 @@ export default async function VaultPage({
           type="search"
           defaultValue={q}
           placeholder="Cari label atau username…"
-          className="h-8 min-w-[200px] rounded-sm border border-border-subtle bg-surface-sunken px-2.5 text-[12.5px] text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
+          aria-label="Cari kredensial"
+          className="h-8 min-w-[200px] rounded-sm border border-border-subtle bg-surface-sunken px-2.5 text-[12px] text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
         />
         <button
           type="submit"
-          className="h-8 cursor-pointer rounded-sm border border-border-subtle bg-surface-overlay px-3 text-[12.5px] text-text-primary transition-colors hover:border-border-strong"
+          className="h-8 cursor-pointer rounded-sm border border-border-subtle bg-surface-overlay px-3 text-[12px] text-text-primary transition-colors hover:border-border-strong"
         >
           Cari
         </button>
-        {(category || q) && (
-          <Link href="/vault" className="text-[12.5px] text-text-muted hover:text-text-secondary">
+        {category || q ? (
+          <Link href="/vault" className="text-[12px] text-text-muted hover:text-text-secondary">
             Reset
           </Link>
-        )}
+        ) : null}
       </form>
 
       {entries.length === 0 ? (
@@ -139,10 +149,12 @@ function Stat({
   label,
   value,
   tone = 'neutral',
+  detail,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: number;
   tone?: 'neutral' | 'warning' | 'critical' | 'healthy';
+  detail?: string;
 }) {
   const color =
     tone === 'warning'
@@ -153,9 +165,10 @@ function Stat({
           ? 'text-status-healthy'
           : 'text-text-primary';
   return (
-    <Card padding="sm">
-      <p className="label-xs">{label}</p>
-      <p className={cn('numeric mt-1 text-[22px] font-semibold leading-none', color)}>{value}</p>
-    </Card>
+    <div className="rounded-md border border-border-subtle bg-surface-raised px-3 py-2.5">
+      <p className="label-xs truncate text-[10px]">{label}</p>
+      <p className={cn('numeric mt-1 text-[20px] font-semibold leading-none', color)}>{value}</p>
+      {detail ? <p className="mt-1 truncate text-[10.5px] text-text-muted">{detail}</p> : null}
+    </div>
   );
 }

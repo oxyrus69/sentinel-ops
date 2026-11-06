@@ -67,10 +67,6 @@ export default async function IncidentDetailPage({
   return (
     <>
       <PageHeader
-        breadcrumb={[
-          { label: 'Tiket Insiden', href: '/incidents' },
-          { label: incident.ticketNumber },
-        ]}
         title={incident.title}
         description={`${CATEGORY_LABEL[incident.category] ?? incident.category} · ${asset.name}`}
         actions={

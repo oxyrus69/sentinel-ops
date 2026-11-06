@@ -13,7 +13,6 @@ export default async function ReportPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={[{ label: 'Portal Klien', href: '/portal' }, { label: 'Laporkan Masalah' }]}
         title="Laporkan Masalah"
         description="Laporan Anda langsung membuat tiket dengan tenggat SLA. Tim akan merespons sesuai tingkat keparahan yang ditetapkan setelah triase."
       />

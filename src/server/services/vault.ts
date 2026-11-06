@@ -40,11 +40,21 @@ export interface VaultListItem {
   assetCompromised: boolean;
 }
 
+/** True for a well-formed UUID — guards a dynamic segment before it hits a uuid column. */
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 export async function listVaultEntries(filter: {
   assetId?: string;
   category?: CredentialCategory;
   q?: string;
 } = {}): Promise<VaultListItem[]> {
+  // A non-UUID assetId must not reach the eq() on asset_id: Postgres would
+  // raise a cast error and the page 500s instead of 404ing.
+  if (filter.assetId && !isUuid(filter.assetId)) return [];
   const conditions = [];
   if (filter.assetId) conditions.push(eq(credentialVaults.assetId, filter.assetId));
   if (filter.category) conditions.push(eq(credentialVaults.category, filter.category));

@@ -53,7 +53,17 @@ export async function listAssets(filter: AssetListFilter = {}, limit = 100) {
   return conditions.length > 0 ? query.where(and(...conditions)) : query;
 }
 
+/** True for a well-formed UUID — guards a dynamic segment before it hits a uuid column. */
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 export async function getAssetById(assetId: string) {
+  // Without this, /assets/<not-a-uuid> turns an eq() on a uuid column into a
+  // Postgres cast error and a 500 instead of the 404 the route already builds.
+  if (!isUuid(assetId)) return null;
   const rows = await db
     .select({
       asset: webAssets,

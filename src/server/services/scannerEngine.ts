@@ -395,8 +395,18 @@ export async function setBaselineDomHash(
     .where(eq(webAssets.id, assetId));
 }
 
+/** True for a well-formed UUID — guards a dynamic segment before it hits a uuid column. */
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 /** Recent scans for an asset, newest first. */
 export async function listAssetScans(assetId: string, limit = 20) {
+  // Without this, a non-UUID id turns eq() on a uuid column into a Postgres
+  // cast error and the page 500s instead of 404ing.
+  if (!isUuid(assetId)) return [];
   return db
     .select()
     .from(scanLogs)

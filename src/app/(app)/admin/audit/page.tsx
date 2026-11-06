@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { desc, eq, sql } from 'drizzle-orm';
 import { requirePageAccess } from '@/server/auth/guard';
 import { db } from '@/server/db';
 import { auditLogs, profiles } from '@/server/db/schema';
 import { PageHeader } from '@/components/layout/page-header';
-import { Card } from '@/components/ui/card';
 import { AUDIT_ACTION_LABEL } from './labels';
 import { AuditTable, type AuditTableRow } from './audit-table';
 
@@ -44,6 +42,9 @@ export default async function AuditPage({
     .limit(300);
 
   const vaultAccessCount = rows.filter((r) => r.log.action.startsWith('vault.secret_')).length;
+  const destructiveCount = rows.filter(
+    (r) => r.log.action.endsWith('_deleted') || r.log.action === 'auth.login_failed',
+  ).length;
 
   const tableRows: AuditTableRow[] = rows.map(({ log, actorName }) => ({
     id: log.id,
@@ -60,65 +61,59 @@ export default async function AuditPage({
     <>
       <PageHeader
         title="Jejak Audit"
-        description="Catatan kronologis setiap perubahan bermakna: perubahan status tiket dan aset, perubahan aturan keamanan, penghapusan aset, dan setiap pembukaan sandi brankas."
+        count={{ value: rows.length, label: 'entri' }}
+        description="Catatan kronologis setiap perubahan bermakna, termasuk setiap pembukaan sandi brankas. Entri tidak dapat diubah dari antarmuka ini."
       />
 
-      <div className="mb-4 grid grid-cols-2 gap-3">
-        <Card padding="sm">
-          <p className="label-xs">Entri ditampilkan</p>
-          <p className="numeric mt-1 text-[22px] font-semibold leading-none text-text-primary">
-            {rows.length}
-          </p>
-        </Card>
-        <Card padding="sm">
-          <p className="label-xs">Akses brankas</p>
-          <p
-            className={`numeric mt-1 text-[22px] font-semibold leading-none ${
-              vaultAccessCount > 0 ? 'text-status-warning' : 'text-text-primary'
-            }`}
-          >
-            {vaultAccessCount}
-          </p>
-        </Card>
-      </div>
-
-      <form method="get" className="mb-4 flex flex-wrap items-center gap-2">
-        <select
-          name="action"
-          defaultValue={actionFilter}
-          className="h-8 rounded-sm border border-border-subtle bg-surface-sunken px-2 text-[12.5px] text-text-primary focus:border-accent focus:outline-none"
-        >
-          <option value="">Semua aksi</option>
-          {Object.entries(AUDIT_ACTION_LABEL).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <input
-          name="q"
-          type="search"
-          defaultValue={q}
-          placeholder="Cari isi ringkasan…"
-          className="h-8 min-w-[200px] rounded-sm border border-border-subtle bg-surface-sunken px-2.5 text-[12.5px] text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none"
-        />
-        <button
-          type="submit"
-          className="h-8 cursor-pointer rounded-sm border border-border-subtle bg-surface-overlay px-3 text-[12.5px] text-text-primary transition-colors hover:border-border-strong"
-        >
-          Filter
-        </button>
-        {actionFilter || q ? (
-          <Link
-            href="/admin/audit"
-            className="text-[12.5px] text-text-muted hover:text-text-secondary"
-          >
-            Reset
-          </Link>
-        ) : null}
-      </form>
+      {/* ---- Mini summary ribbon ---- */}
+      <section aria-label="Ringkasan audit" className="mb-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <RibbonTile label="Entri ditampilkan" value={rows.length} />
+          <RibbonTile
+            label="Akses brankas"
+            value={vaultAccessCount}
+            tone={vaultAccessCount > 0 ? 'warning' : 'neutral'}
+            detail="buka atau salin sandi"
+          />
+          <RibbonTile
+            label="Aksi sensitif"
+            value={destructiveCount}
+            tone={destructiveCount > 0 ? 'critical' : 'healthy'}
+            detail="hapus / gagal masuk"
+          />
+          <RibbonTile label="Aksi terdaftar" value={Object.keys(AUDIT_ACTION_LABEL).length} />
+        </div>
+      </section>
 
       <AuditTable rows={tableRows} />
     </>
+  );
+}
+
+function RibbonTile({
+  label,
+  value,
+  tone = 'neutral',
+  detail,
+}: {
+  label: string;
+  value: number;
+  tone?: 'neutral' | 'healthy' | 'warning' | 'critical';
+  detail?: string;
+}) {
+  const color =
+    tone === 'healthy'
+      ? 'text-status-healthy'
+      : tone === 'warning'
+        ? 'text-status-warning'
+        : tone === 'critical'
+          ? 'text-status-critical'
+          : 'text-text-primary';
+  return (
+    <div className="rounded-md border border-border-subtle bg-surface-raised px-3 py-2.5">
+      <p className="label-xs truncate text-[10px]">{label}</p>
+      <p className={`numeric mt-1 text-[20px] font-semibold leading-none ${color}`}>{value}</p>
+      {detail ? <p className="mt-1 truncate text-[10.5px] text-text-muted">{detail}</p> : null}
+    </div>
   );
 }

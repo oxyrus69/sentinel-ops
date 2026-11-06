@@ -26,7 +26,6 @@ export default async function NewAssetPage() {
   return (
     <>
       <PageHeader
-        breadcrumb={[{ label: 'Inventaris Aset', href: '/assets' }, { label: 'Tambah Aset' }]}
         title="Tambah Aset Web"
         description="Aset baru langsung masuk inventaris dan dapat dipindai. Halaman status publik memakai slug yang dibentuk otomatis dari domain."
       />

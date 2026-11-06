@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Plus, RotateCcw, Search } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { requirePageAccess } from '@/server/auth/guard';
 import { listAssets, type AssetListFilter } from '@/server/services/assets';
 import { assetHealth, platformType, type AssetHealth, type PlatformType } from '@/server/db/schema';
 import { parseTableQuery } from '@/lib/tableQuery';
+import { cn } from '@/lib/cn';
+import { getKpiSummary } from '@/server/services/analytics';
 import { PageHeader } from '@/components/layout/page-header';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { AssetsTable, type AssetTableRow } from './assets-table';
 
 export const metadata: Metadata = { title: 'Inventaris Aset' };
@@ -17,22 +17,14 @@ interface AssetsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const PLATFORM_OPTIONS: Array<{ value: PlatformType; label: string }> = [
-  { value: 'OJS_3', label: 'OJS 3' },
-  { value: 'WORDPRESS', label: 'WordPress' },
-  { value: 'LARAVEL', label: 'Laravel' },
-  { value: 'NODE_SSR', label: 'Node.js' },
-  { value: 'STATIC_WEB', label: 'Situs Statis' },
-  { value: 'CUSTOM_PHP', label: 'PHP Kustom' },
-];
-
-const HEALTH_OPTIONS: Array<{ value: AssetHealth; label: string }> = [
-  { value: 'HEALTHY', label: 'Sehat' },
-  { value: 'WARNING', label: 'Peringatan' },
-  { value: 'COMPROMISED', label: 'Terkompromi' },
-  { value: 'DOWN', label: 'Mati' },
-  { value: 'MAINTENANCE', label: 'Pemeliharaan' },
-];
+/**
+ * Asset inventory (Global Dashboard Design §5.2).
+ *
+ * Baris 1 — mini summary ribbon of module aggregates.
+ * Baris 2 — the EnterpriseDataGrid, whose toolbar owns search, facet chips,
+ * density, row selection and paging. The old page-level filter form is gone:
+ * filtering now lives where the data is, and a facet chip shows its own count.
+ */
 
 export default async function AssetsPage({ searchParams }: AssetsPageProps) {
   await requirePageAccess('/assets');
@@ -62,8 +54,7 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
     q: query.q || undefined,
   };
 
-  const rows = await listAssets(filter, 500);
-  const hasFilters = platform !== null || health !== null || query.q.length > 0;
+  const [rows, kpi] = await Promise.all([listAssets(filter, 500), getKpiSummary()]);
 
   // Only plain data crosses into the table component.
   const tableRows: AssetTableRow[] = rows.map((row) => ({
@@ -81,121 +72,59 @@ export default async function AssetsPage({ searchParams }: AssetsPageProps) {
     openIncidents: row.openIncidents,
   }));
 
+  const healthyRatio = kpi.totalAssets === 0 ? 100 : (kpi.healthyAssets / kpi.totalAssets) * 100;
+
   return (
     <>
       <PageHeader
         title="Inventaris Aset"
-        description="Seluruh situs web yang dipantau Sentinel Ops beserta status kesehatan, uptime 30 hari, sisa masa berlaku sertifikat SSL, dan insiden yang masih terbuka."
+        count={{ value: rows.length, label: 'aset ditampilkan' }}
+        description="Status kesehatan, uptime 30 hari, sisa masa berlaku SSL, dan insiden yang masih terbuka. Klik baris untuk inspeksi tanpa meninggalkan daftar."
         actions={
-          <Button asChild variant="primary" size="sm">
-            <Link href="/assets/baru">
-              <Plus aria-hidden="true" className="h-3.5 w-3.5" />
-              Tambah Aset
-            </Link>
-          </Button>
+          <>
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/api/export/assets">Ekspor CSV</Link>
+            </Button>
+            <Button asChild variant="primary" size="sm">
+              <Link href="/assets/baru">
+                <Plus aria-hidden="true" className="h-3.5 w-3.5" />
+                Tambah Aset
+              </Link>
+            </Button>
+          </>
         }
       />
 
-      {/* ---- Filters ---- */}
-      <section aria-label="Filter inventaris" className="mb-4">
-        <Card padding="md">
-          <form method="get" action="/assets" className="flex flex-wrap items-end gap-3">
-            <div className="min-w-0 flex-1 basis-full sm:basis-56">
-              <label htmlFor="filter-q" className="label-xs mb-1.5 block">
-                Cari
-              </label>
-              <div className="relative">
-                <Search
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted"
-                />
-                <input
-                  id="filter-q"
-                  name="q"
-                  type="search"
-                  defaultValue={query.q}
-                  placeholder="Nama, domain, atau hosting"
-                  className="h-9 w-full rounded-sm border border-border-subtle bg-surface-sunken pl-8 pr-3 text-[13px] text-text-primary placeholder:text-text-muted transition-colors duration-fast ease-standard hover:border-border-strong focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                />
-              </div>
-            </div>
-
-            <div className="flex w-full flex-col items-stretch gap-3 sm:w-auto sm:flex-row sm:items-end">
-              <div className="min-w-0 sm:w-44">
-                <label htmlFor="filter-platform" className="label-xs mb-1.5 block">
-                  Platform
-                </label>
-                <select
-                  id="filter-platform"
-                  name="platform"
-                  defaultValue={platform ?? ''}
-                  className="h-9 w-full cursor-pointer rounded-sm border border-border-subtle bg-surface-sunken px-2 pr-6 text-[13px] text-text-primary transition-colors duration-fast ease-standard hover:border-border-strong focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                >
-                  <option value="">Semua platform</option>
-                  {PLATFORM_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="min-w-0 sm:w-44">
-                <label htmlFor="filter-health" className="label-xs mb-1.5 block">
-                  Status
-                </label>
-                <select
-                  id="filter-health"
-                  name="health"
-                  defaultValue={health ?? ''}
-                  className="h-9 w-full cursor-pointer rounded-sm border border-border-subtle bg-surface-sunken px-2 pr-6 text-[13px] text-text-primary transition-colors duration-fast ease-standard hover:border-border-strong focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                >
-                  <option value="">Semua status</option>
-                  {HEALTH_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="flex w-full items-center gap-2 sm:w-auto">
-              <Button type="submit" variant="secondary" size="md">
-                Terapkan
-              </Button>
-              {hasFilters ? (
-                <Link
-                  href="/assets"
-                  className="inline-flex h-9 items-center gap-1.5 rounded-sm px-2 text-[13px] text-text-secondary transition-colors duration-fast hover:bg-surface-overlay hover:text-text-primary"
-                >
-                  <RotateCcw aria-hidden="true" className="h-3.5 w-3.5" />
-                  Reset
-                </Link>
-              ) : null}
-            </div>
-          </form>
-        </Card>
+      {/* ---- Mini summary ribbon ---- */}
+      <section aria-label="Ringkasan inventaris" className="mb-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <RibbonTile label="Total aset" value={kpi.totalAssets} />
+          <RibbonTile
+            label="Sehat"
+            value={kpi.healthyAssets}
+            tone="healthy"
+            detail={`${Math.round(healthyRatio)}% dari total`}
+          />
+          <RibbonTile
+            label="Perlu tindakan"
+            value={kpi.compromisedAssets + kpi.downAssets}
+            tone={kpi.compromisedAssets + kpi.downAssets > 0 ? 'critical' : 'neutral'}
+            detail={`${kpi.compromisedAssets} kompromi · ${kpi.downAssets} mati`}
+          />
+          <RibbonTile
+            label="SSL ≤ 14 hari"
+            value={kpi.sslExpiringIn14Days}
+            tone={kpi.sslExpiringIn14Days > 0 ? 'warning' : 'neutral'}
+            detail="perlu perpanjangan"
+          />
+        </div>
       </section>
-
-      {hasFilters ? (
-        <p className="mb-3 text-[12.5px] text-text-secondary">
-          Filter aktif{' '}
-          <Badge tone="info" size="sm">
-            Terfilter
-          </Badge>
-        </p>
-      ) : null}
 
       <AssetsTable
         rows={tableRows}
         initialSortColumnId={sortKeyToColumnId(query.sort)}
         initialSortDesc={query.dir === 'desc'}
-        emptyMessage={
-          hasFilters
-            ? 'Tidak ada aset yang cocok dengan filter ini.'
-            : 'Belum ada aset terdaftar. Tambahkan aset pertama lewat tombol Tambah Aset.'
-        }
+        emptyMessage="Belum ada aset yang cocok. Ubah filter status atau kata kunci pencarian."
       />
     </>
   );
@@ -215,4 +144,32 @@ function sortKeyToColumnId(sort: string | null): string {
     default:
       return 'name';
   }
+}
+
+function RibbonTile({
+  label,
+  value,
+  tone = 'neutral',
+  detail,
+}: {
+  label: string;
+  value: number;
+  tone?: 'neutral' | 'healthy' | 'warning' | 'critical';
+  detail?: string;
+}) {
+  const color =
+    tone === 'healthy'
+      ? 'text-status-healthy'
+      : tone === 'warning'
+        ? 'text-status-warning'
+        : tone === 'critical'
+          ? 'text-status-critical'
+          : 'text-text-primary';
+  return (
+    <div className="rounded-md border border-border-subtle bg-surface-raised px-3 py-2.5">
+      <p className="label-xs truncate text-[10px]">{label}</p>
+      <p className={cn('numeric mt-1 text-[20px] font-semibold leading-none', color)}>{value}</p>
+      {detail ? <p className="mt-1 truncate text-[10.5px] text-text-muted">{detail}</p> : null}
+    </div>
+  );
 }

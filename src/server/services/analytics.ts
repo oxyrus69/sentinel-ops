@@ -1,8 +1,9 @@
 import 'server-only';
 
-import { and, eq, gte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, sql } from 'drizzle-orm';
 import { db } from '@/server/db';
 import {
+  auditLogs,
   incidents,
   profiles,
   scanLogs,
@@ -282,4 +283,106 @@ export async function getAssetScanStats(assetId: string, days = 30) {
     .orderBy(sql`date_trunc('day', ${scanLogs.scannedAt})`);
 
   return rows;
+}
+
+export interface AuditActivityItem {
+  id: string;
+  action: string;
+  actorLabel: string | null;
+  actorName: string | null;
+  actorRole: string | null;
+  entityType: string;
+  entityId: string | null;
+  summary: string;
+  createdAt: Date;
+}
+
+/** Latest audit entries for the live activity stream in the telemetry rail. */
+export async function getRecentAuditActivity(limit = 8): Promise<AuditActivityItem[]> {
+  const rows = await db
+    .select({
+      id: auditLogs.id,
+      action: auditLogs.action,
+      actorLabel: auditLogs.actorLabel,
+      actorRole: auditLogs.actorRole,
+      entityType: auditLogs.entityType,
+      entityId: auditLogs.entityId,
+      summary: auditLogs.summary,
+      createdAt: auditLogs.createdAt,
+      actorName: profiles.fullName,
+    })
+    .from(auditLogs)
+    .leftJoin(profiles, eq(auditLogs.actorId, profiles.id))
+    .orderBy(desc(auditLogs.createdAt))
+    .limit(limit);
+
+  return rows.map((r) => ({
+    id: r.id,
+    action: r.action,
+    actorLabel: r.actorLabel,
+    actorName: r.actorName,
+    actorRole: r.actorRole,
+    entityType: r.entityType,
+    entityId: r.entityId,
+    summary: r.summary,
+    createdAt: r.createdAt,
+  }));
+}
+
+export interface DailyTrendPoint {
+  date: string;
+  dayLabel: string;
+  scans: number;
+  threats: number;
+  avgResponseMs: number;
+}
+
+/**
+ * Daily scan + threat series for the dashboard hero chart.
+ *
+ * Every day in the window is present even with no scans, so the chart line has
+ * no gaps and a quiet day is visibly zero rather than missing.
+ */
+export async function getDailyTrend(days = 30): Promise<DailyTrendPoint[]> {
+  const rows = await db
+    .select({
+      day: sql<string>`to_char(date_trunc('day', ${scanLogs.scannedAt}), 'YYYY-MM-DD')`,
+      scans: sql<number>`count(*)::int`,
+      threats: sql<number>`coalesce(sum(${scanLogs.threatsDetected}), 0)::int`,
+      avgResponseMs: sql<number>`coalesce(avg(${scanLogs.responseTimeMs}), 0)::int`,
+    })
+    .from(scanLogs)
+    .where(gte(scanLogs.scannedAt, new Date(Date.now() - days * 86_400_000)))
+    .groupBy(sql`date_trunc('day', ${scanLogs.scannedAt})`)
+    .orderBy(sql`date_trunc('day', ${scanLogs.scannedAt})`);
+
+  const byDay = new Map(
+    (rows as Array<Record<string, unknown>>).map((r) => [
+      String(r.day),
+      {
+        scans: Number(r.scans ?? 0),
+        threats: Number(r.threats ?? 0),
+        avgResponseMs: Number(r.avgResponseMs ?? 0),
+      },
+    ]),
+  );
+
+  const out: DailyTrendPoint[] = [];
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
+      d.getDate(),
+    ).padStart(2, '0')}`;
+    const found = byDay.get(key);
+    out.push({
+      date: key,
+      dayLabel: d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
+      scans: found?.scans ?? 0,
+      threats: found?.threats ?? 0,
+      avgResponseMs: found?.avgResponseMs ?? 0,
+    });
+  }
+  return out;
 }
